@@ -36,17 +36,17 @@ const ShotA: React.FC = () => {
   const shu = clamp01((n - 118) / 12);
   return (
     <DarkStage key="left" bars dust={150} fog={0.5}>
-      <Extrude text="医学" cx={640} cy={300} size={172} p={clamp01((n - 6) / 34)} layers={10} depth={30}
+      <Extrude text="医学" cx={640} cy={286} size={186} p={clamp01((n - 6) / 34)} layers={10} depth={30}
                rx={7} ry={-13} letterSpacing={16} />
       {amp > 0 ? (
         <>
-          <Flare x={640} y={452} k={amp * (0.5 + 0.5 * breathe)} len={300} color={LIT.gold} />
-          <Extrude text="&" cx={520} cy={452} size={86} p={amp} layers={7} depth={20} rx={6} ry={-10}
+          <Flare x={640} y={472} k={amp * (0.5 + 0.5 * breathe)} len={340} color={LIT.gold} />
+          <Extrude text="&" cx={498} cy={472} size={104} p={amp} layers={7} depth={22} rx={6} ry={-10}
                    glow={LIT.gold} letterSpacing={0} />
         </>
       ) : null}
       {shu > 0 ? (
-        <Extrude text="数术" cx={760} cy={452} size={120} p={shu} layers={9} depth={24} rx={6} ry={-12}
+        <Extrude text="数术" cx={772} cy={472} size={144} p={shu} layers={9} depth={26} rx={6} ry={-12}
                  letterSpacing={14} />
       ) : null}
       <LightSweep p={clamp01((n - 150) / 60)} angle={12} w={0.3} k={0.55} />
@@ -103,27 +103,32 @@ const ShotB: React.FC = () => {
             filter: 'blur(18px)',
           }} />
           <svg width="1280" height="720" style={{position: 'absolute', inset: 0}}>
-            {[150, 196, 250].map((r, i) => (
+            {[196, 244, 320].map((r, i) => (
               <circle key={r} cx={cx} cy={cy} r={r} fill="none"
                       stroke={i === 0 ? cineA(LIT.celadon, 0.55) : cineA(DK.text, 0.16)}
                       strokeWidth={i === 0 ? 1.4 : 1} strokeDasharray={i === 1 ? '3 6' : undefined} />
             ))}
+            {/* 内圈刻度：从环上向外的短线（用 SVG 画，不要拿 div 的 rotate 去凑角度） */}
+            {RING.map((z, i) => {
+              const a = ((i - 1) * 30 - 90) * Math.PI / 180;
+              const r0 = 196, r1 = 214;
+              return (
+                <line key={`t${z}`} x1={cx + r0 * Math.cos(a)} y1={cy + r0 * Math.sin(a)}
+                      x2={cx + r1 * Math.cos(a)} y2={cy + r1 * Math.sin(a)}
+                      stroke={cineA(LIT.celadon, 0.5)} strokeWidth={1.6} />
+              );
+            })}
           </svg>
           {/* 内圈十二地支：**固定不动** */}
           {RING.map((z, i) => {
             const a = ((i - 1) * 30 - 90) * Math.PI / 180;
-            const x = cx + 168 * Math.cos(a), y = cy + 168 * Math.sin(a);
+            const x = cx + 222 * Math.cos(a), y = cy + 222 * Math.sin(a);
             const p = clamp01((n - 96 - i * 1.6) / 16);
             return (
               <React.Fragment key={`in${z}`}>
                 <div style={{
-                  position: 'absolute', left: cx + 196 * Math.cos(a) - 1, top: cy + 196 * Math.sin(a) - 1,
-                  width: 2, height: 12, background: cineA(LIT.celadon, 0.5 * p),
-                  transform: `rotate(${(i - 1) * 30}deg)`,
-                }} />
-                <div style={{
                   position: 'absolute', left: x, top: y, transform: 'translate(-50%,-50%)', opacity: p,
-                  fontFamily: FONT_KAI_BOLD, fontSize: 30, color: DK.text, lineHeight: 1,
+                  fontFamily: FONT_KAI_BOLD, fontSize: 34, color: DK.text, lineHeight: 1,
                   textShadow: '0 2px 10px rgba(0,0,0,0.7)',
                 }}>{z}</div>
               </React.Fragment>
@@ -136,14 +141,14 @@ const ShotB: React.FC = () => {
               const p = clamp01((n - at) / 12);
               if (p <= 0) return null;
               const a = ((i - 1) * 30 - 90) * Math.PI / 180;
-              const x = cx + 252 * Math.cos(a), y = cy + 252 * Math.sin(a);
+              const x = cx + 322 * Math.cos(a), y = cy + 322 * Math.sin(a);
               return (
                 <div key={`out${z}`} style={{
                   position: 'absolute', left: x, top: y,
                   // 反向自转：圈在转，字保持正立（否则读不出"转圈"）
                   transform: `translate(-50%,-50%) rotate(${(-outerSpin).toFixed(2)}deg) scale(${(0.7 + 0.3 * p).toFixed(3)})`,
                   opacity: p,
-                  fontFamily: FONT_KAI_BOLD, fontSize: 38, color: LIT.paper, lineHeight: 1,
+                  fontFamily: FONT_KAI_BOLD, fontSize: 46, color: LIT.paper, lineHeight: 1,
                   textShadow: `0 0 18px ${cineA(LIT.ice, 0.35)}, 0 3px 12px rgba(0,0,0,0.7)`,
                 }}>{z}</div>
               );
@@ -201,10 +206,10 @@ const ShotC: React.FC = () => {
           {n >= 150 && n <= 151 ? <AbsoluteFill style={{background: 'rgba(255,250,240,0.55)'}} /> : null}
           {Array.from({length: 24}, (_, i) => {
             const a = rnd(31, i) * Math.PI * 2;
-            const v = 150 + 330 * rnd(32, i);
+            const v = 170 + 400 * rnd(32, i);
             const r = (v / 4.4) * (1 - Math.exp(-4.4 * shard * 0.5));
             const x = 640 + r * Math.cos(a), y = 356 + r * Math.sin(a) + 70 * shard * shard;
-            const s = 26 + 58 * rnd(33, i);
+            const s = 34 + 78 * rnd(33, i);
             const rot = (rnd(34, i) - 0.5) * 300 * shard * 3;
             const op = clamp01(1 - shard * 0.6);
             return (
@@ -239,10 +244,10 @@ const ShotD: React.FC<{course: string; tagline: string; series: string; sub: str
   return (
     <DarkStage key="top" bars dust={170} fog={0.55}>
       <LightSweep p={clamp01((n - 4) / 70)} angle={-10} w={0.4} k={0.7} />
-      <Extrude text={course} cx={640} cy={318} size={132} p={clamp01((n - 8) / 56)} layers={11} depth={30}
+      <Extrude text={course} cx={640} cy={326} size={172} p={clamp01((n - 8) / 56)} layers={11} depth={32}
                rx={8} ry={-14} letterSpacing={18} />
-      <Flare x={640} y={318} k={clamp01((n - 60) / 40) * (0.5 + 0.5 * breathe)} len={560} />
-      <CineCaption text={tagline} cx={640} cy={492} size={40} p={clamp01((n - 150) / 30)} color={DK.text} letterSpacing={12} />
+      <Flare x={640} y={326} k={clamp01((n - 60) / 40) * (0.5 + 0.5 * breathe)} len={600} />
+      <CineCaption text={tagline} cx={640} cy={508} size={46} p={clamp01((n - 150) / 30)} color={DK.text} letterSpacing={12} />
       <CineCaption text={`${series} · ${sub}`} cx={640} cy={176} size={22} p={clamp01((n - 200) / 26)} />
     </DarkStage>
   );
