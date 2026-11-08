@@ -1,0 +1,33 @@
+name: 接触印相（关键帧自检）
+
+# 只出印相，不出片。逐帧 still 是每帧一次浏览器冷启动，所以每个印相合成只用一次 still。
+on:
+  workflow_dispatch:
+    inputs:
+      which:
+        description: 'ILTSheet（预告片 v3 四镜）/ ILCSheet（暗场十支）/ ILSheet（浅色十支）/ ILESheet（实验组十二支）/ 留空=全部'
+        required: false
+        default: 'ILTSheet'
+jobs:
+  sheet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --no-audit --no-fund
+      - name: stills
+        env:
+          REMOTION_GL: swiftshader
+        run: |
+          mkdir -p out
+          W='${{ inputs.which }}'; W=${W:-all}
+          render() { npx remotion still src/index.ts "$1" "out/$1.png" --frame=0 --gl=swiftshader --timeout=300000 --log=error; }
+          if [ "$W" = "all" ]; then for c in ILTSheet ILCSheet ILSheet ILESheet; do render $c; done; else render "$W"; fi
+          ls -la out/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sheets
+          path: out/*.png
+          if-no-files-found: error
