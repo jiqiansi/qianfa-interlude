@@ -396,8 +396,10 @@ export const Burst: React.FC<{
   cx: number; cy: number; t: number; qty?: number; seed?: number;
   color?: string; color2?: string; spread?: number; life?: number;
   ring?: boolean; flash?: boolean; gravity?: number;
+  /** 冲击环的尺度倍率：印/玻璃这类"大件"砸下去，环必须比物件大得多才看得见 */
+  ringScale?: number;
 }> = ({cx, cy, t, qty = 120, seed = 11, color = LIT.cinnabar, color2 = DK.text, spread = 320,
-  life = 1.1, ring = true, flash = true, gravity = 240}) => {
+  life = 1.1, ring = true, flash = true, gravity = 240, ringScale = 1}) => {
   const s = Math.max(0, t);
   if (s <= 0 || s > life * 1.6) return null;
   const parts = Array.from({length: qty}, (_, i) => {
@@ -421,8 +423,8 @@ export const Burst: React.FC<{
       ) : null}
       <svg width="1280" height="720" style={{position: 'absolute', inset: 0}}>
         {ring ? [0, 1, 2].map((i) => {
-          const rr = (60 + 260 * i * 0.42) * easeOutCubic(clamp01(s / (0.5 + i * 0.18)));
-          const op = clamp01(1 - s / (0.55 + i * 0.22)) * (i === 0 ? 0.5 : i === 1 ? 0.28 : 0.16);
+          const rr = (60 + 260 * i * 0.42) * ringScale * easeOutCubic(clamp01(s / (0.5 + i * 0.18)));
+          const op = clamp01(1 - s / (0.62 + i * 0.26)) * (i === 0 ? 0.62 : i === 1 ? 0.36 : 0.2);
           if (op <= 0.01) return null;
           return <ellipse key={i} cx={cx} cy={cy} rx={rr} ry={rr * 0.52} fill="none"
                           stroke={i === 0 ? color : color2} strokeWidth={2.4 - i * 0.6} opacity={op}

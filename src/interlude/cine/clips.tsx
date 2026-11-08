@@ -178,12 +178,12 @@ export const CineGanzhiFlow: React.FC<CineProps> = ({
         {Array.from({length: 14}, (_, i) => {
           const r = i - 6;
           const gi = ((idx + r) % 60 + 60) % 60;
-          const z = r * 200 - 1000 * (1 - s);                     // 远处出发，向镜头走来
+          const z = r * 180 - 1500 * (1 - s);                     // 远处出发，向镜头走来
           const scale = CAM / (CAM - z);                           // CSS 透视的等效放大率
-          if (scale < 0.12 || scale > 3.4) return null;
+          if (scale < 0.15 || scale > 2.05) return null;         // 封顶：别让字怼到镜头上成一团糊
           const isLock = locked && r === 0;
-          const blur = clamp01(-z / 800) * 7;
-          const op = clamp01(1.05 - Math.abs(z) / 2400) * (isLock ? 1 : 0.6);
+          const blur = clamp01(-z / 900) * 5.5;
+          const op = clamp01(1.05 - Math.abs(z) / 3200) * (isLock ? 1 : 0.6);
           if (op <= 0.02) return null;
           return (
             <div key={i} style={{
@@ -314,12 +314,16 @@ export const CineInkBurst: React.FC<CineProps> = ({word = '续'}) => {
       {n <= 26 ? (
         <div style={{
           position: 'absolute', left: 640 - 13, top: 356 - 13, width: 26, height: 26, borderRadius: 13,
-          background: `radial-gradient(circle at 34% 30%, #6E7880 0%, #1A2126 62%, #0B0F12 100%)`,
-          boxShadow: `0 0 22px ${cineA('#9FB0BA', 0.35)}, inset 0 0 8px rgba(0,0,0,0.8)`,
+          background: `radial-gradient(circle at 32% 28%, #A8B4BC 0%, #3A444C 42%, #141A1E 100%)`,
+          boxShadow: `0 0 26px ${cineA('#C9D4DC', 0.55)}, 0 0 70px ${cineA(LIT.ice, 0.28)}, inset 0 0 10px rgba(0,0,0,0.75)`,
           transform: `scale(${(1 + 0.06 * Math.sin(n * 0.3)).toFixed(3)})`,
-        }} />
+        }}>
+          {/* 镜面高光：暗底上一颗黑点根本看不见，得给它一点反光 */}
+          <div style={{position: 'absolute', left: 7, top: 5, width: 6, height: 5, borderRadius: 4,
+                       background: 'rgba(255,255,255,0.65)', filter: 'blur(1.2px)'}} />
+        </div>
       ) : null}
-      <Burst cx={640} cy={356} t={t * 1.02} qty={200} seed={51} spread={360} life={1.25}
+      <Burst cx={640} cy={356} t={t * 1.02} qty={220} seed={51} spread={470} life={1.35}
              color="#2B343A" color2={LIT.cinnabar} gravity={210} />
       <Burst cx={640} cy={356} t={t * 1.02} qty={40} seed={57} spread={250} life={0.9}
              color={LIT.cinnabar} color2={LIT.gold} ring={false} flash={false} gravity={160} />
@@ -344,6 +348,13 @@ export const CineGlassSlab: React.FC<CineProps> = ({word = '下一节', series =
   return (
     <DarkStage key="right" bars={false} dust={110} fog={0.3}>
       <div style={{opacity: 1 - clamp01((n - 42) / 6)}}>
+      {/* ⚠ 磨砂玻璃在**均匀黑底上是看不出来的**（blur 一片黑还是黑）。
+          所以板后面必须先有一片光池，玻璃才有东西可折射。 */}
+      <div style={{
+        position: 'absolute', left: 300, top: 210, width: 680, height: 300, borderRadius: 40,
+        background: 'radial-gradient(closest-side, rgba(255,236,196,0.20) 0%, rgba(180,214,235,0.10) 52%, rgba(0,0,0,0) 78%)',
+        filter: 'blur(34px)', opacity: clamp01((n - 2) / 16) * clamp01(1 - shard * 0.5),
+      }} />
       {shard <= 0 ? (
         <GlassSlab x={392} y={286} w={496} h={148} p={inP} from="right" ry={-22} rx={6} z={70}
                    sweep={clamp01((n - 24) / 40)} blurPx={26}>
@@ -365,7 +376,7 @@ export const CineGlassSlab: React.FC<CineProps> = ({word = '下一节', series =
       {/* 碎裂：12 片玻璃多边形 + 粒子 */}
       {shard > 0 ? (
         <AbsoluteFill style={{pointerEvents: 'none'}}>
-          {Array.from({length: 12}, (_, i) => {
+          {Array.from({length: 18}, (_, i) => {
             const a = rnd(61, i) * Math.PI * 2;
             const v = 130 + 260 * rnd(62, i);
             const r = (v / 4.2) * (1 - Math.exp(-4.2 * shard * 0.5));
@@ -377,14 +388,15 @@ export const CineGlassSlab: React.FC<CineProps> = ({word = '下一节', series =
               <div key={i} style={{
                 position: 'absolute', left: x, top: y, width: s, height: s * 0.7,
                 transform: `translate(-50%,-50%) rotate(${rot.toFixed(1)}deg)`,
-                background: `linear-gradient(140deg, rgba(255,255,255,0.30), rgba(180,220,235,0.10))`,
-                border: `1px solid ${cineA(DK.text, 0.25)}`, opacity: op * 0.9,
+                background: `linear-gradient(140deg, rgba(255,255,255,0.86) 0%, rgba(186,226,244,0.34) 45%, rgba(255,255,255,0.10) 100%)`,
+                border: `1px solid ${cineA('#FFFFFF', 0.55)}`,
+                boxShadow: `0 0 18px ${cineA(LIT.ice, 0.35)}, 0 6px 18px rgba(0,0,0,0.5)`, opacity: op,
                 clipPath: 'polygon(0% 12%, 62% 0%, 100% 44%, 74% 100%, 18% 88%)',
               }} />
             );
           })}
-          <Burst cx={640} cy={360} t={shard * 0.9} qty={90} seed={66} spread={300} life={0.8}
-                 color={LIT.ice} color2={DK.text} gravity={260} />
+          <Burst cx={640} cy={360} t={shard * 0.9} qty={150} seed={66} spread={420} life={0.95}
+                 color={LIT.ice} color2={LIT.gold} gravity={300} flash />
         </AbsoluteFill>
       ) : null}
       <LightSweep p={clamp01((n - 40) / 30)} angle={-20} w={0.26} k={1} color="rgba(255,255,255,0.5)" />
@@ -553,7 +565,7 @@ export const CineWordsFog: React.FC<CineProps> = ({
       {/* 涌进来的浓雾 */}
       <div style={{
         position: 'absolute', left: -240 + 300 * clamp01((n - 2) / 60), top: 60, width: 1200, height: 620,
-        borderRadius: '50%', opacity: 0.75 * fogIn,
+        borderRadius: '50%', opacity: fogIn,
         background: 'radial-gradient(closest-side, rgba(214,226,234,0.22) 0%, rgba(180,200,214,0.10) 48%, rgba(0,0,0,0) 76%)',
         filter: 'blur(30px)',
       }} />
@@ -581,16 +593,53 @@ export const CineSealThunder: React.FC<CineProps> = ({word = '落印', series = 
   const fall = clamp01((n - 2) / 24);
   const y = 344 - 300 * (1 - Math.pow(fall, 2.2));
   const t = Math.max(0, (n - 26) / 30);
-  const flash = n >= 26 && n <= 27 ? 0.5 : 0;
+  const flash = n >= 26 && n <= 27 ? 0.72 : 0;
   return (
     <DarkStage key="top" bars={false} dust={120} fog={0.35} grain={0.07}>
       {flash > 0 ? <AbsoluteFill style={{background: `rgba(255,248,232,${flash})`}} /> : null}
       <Seal3D cx={640} cy={y} size={186} chars="钤法" k={clamp01(fall * 1.4)} spin={1} />
-      <Burst cx={640} cy={344} t={t} qty={150} seed={81} spread={330} life={1.05}
-             color={LIT.cinnabar} color2={LIT.gold} gravity={230} />
+      <Burst cx={640} cy={344} t={t} qty={190} seed={81} spread={430} life={1.25}
+             color={LIT.cinnabar} color2={LIT.gold} gravity={300} ringScale={2.1} />
+      <Burst cx={640} cy={344} t={Math.max(0, (n - 30) / 30)} qty={90} seed={83} spread={300} life={1.0}
+             color={LIT.gold} color2={DK.text} gravity={260} ring={false} flash={false} />
       <Flare x={640} y={344} k={clamp01((n - 26) / 18) * clamp01(1 - t * 0.5)} len={480} />
       <CineCaption text={word} cx={640} cy={520} size={34} p={clamp01((n - 34) / 18)} color={DK.text} />
       <CineCaption text={series} cx={640} cy={604} size={22} p={clamp01((n - 42) / 20) * clamp01(1 - t)} />
     </DarkStage>
+  );
+};
+
+/* ================================================================ 合集（给评审 / 发布用）
+ * 十支按顺序硬切拼成一条 49 秒的片子。每支首末都在暗场里，硬切本身就是预告片的剪法。
+ * 单独注册成 CineReel，不参与单片渲染。
+ */
+import {Sequence} from 'remotion';
+const REEL: Array<{C: React.FC<CineProps>; len: number}> = [
+  {C: CineAwakening, len: 240},
+  {C: CineLightThrough, len: 210},
+  {C: CineGanzhiFlow, len: 195},
+  {C: CineRing3D, len: 180},
+  {C: CineInkBurst, len: 90},
+  {C: CineGlassSlab, len: 75},
+  {C: CineTunnel, len: 78},
+  {C: CineSparksPlate, len: 180},
+  {C: CineWordsFog, len: 150},
+  {C: CineSealThunder, len: 75},
+];
+export const CINE_REEL_FRAMES = REEL.reduce((a, b) => a + b.len, 0);
+export const CineReel: React.FC<CineProps> = (props) => {
+  let at = 0;
+  return (
+    <AbsoluteFill style={{background: '#000'}}>
+      {REEL.map(({C, len}, i) => {
+        const from = at;
+        at += len;
+        return (
+          <Sequence key={i} from={from} durationInFrames={len}>
+            <C {...props} />
+          </Sequence>
+        );
+      })}
+    </AbsoluteFill>
   );
 };

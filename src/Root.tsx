@@ -11,6 +11,7 @@ import {ILESheet, ILE_W, ILE_H} from './interlude/Sheet2';
 import {
   CineAwakening, CineLightThrough, CineGanzhiFlow, CineRing3D, CineInkBurst,
   CineGlassSlab, CineTunnel, CineSparksPlate, CineWordsFog, CineSealThunder,
+  CineReel, CINE_REEL_FRAMES,
 } from './interlude/cine/clips';
 import {ILCSheet, ILC_W, ILC_H} from './interlude/cine/Sheet3';
 
@@ -66,6 +67,7 @@ export const Root: React.FC = () => (
     <Composition id="CineSparksPlate" component={CineSparksPlate} durationInFrames={180} fps={FPS} width={W} height={H} defaultProps={base} />
     <Composition id="CineWordsFog" component={CineWordsFog} durationInFrames={150} fps={FPS} width={W} height={H} defaultProps={base} />
     <Composition id="CineSealThunder" component={CineSealThunder} durationInFrames={75} fps={FPS} width={W} height={H} />
+    <Composition id="CineReel" component={CineReel} durationInFrames={CINE_REEL_FRAMES} fps={FPS} width={W} height={H} defaultProps={base} />
     <Composition id="ILCSheet" component={ILCSheet} durationInFrames={260} fps={FPS} width={ILC_W} height={ILC_H} />
     <Composition id="ILSheet" component={ILSheet} durationInFrames={200} fps={FPS} width={SHEET_W} height={SHEET_H} />
   </>
