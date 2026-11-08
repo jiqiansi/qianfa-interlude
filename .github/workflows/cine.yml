@@ -1,0 +1,88 @@
+name: 伤寒钤法 · 暗场电影感片头/转场 出片
+
+# 手动触发。10 支片段（每支 2.5–8s）在云端并行出片；本地不动 CPU（操作者裁定）。
+# 公开仓库：4 vCPU / 16 GiB / ~86GB 可用盘。
+on:
+  workflow_dispatch:
+    inputs:
+      comps:
+        description: '要渲的 composition，JSON 数组；留空 = 全部 10 支'
+        required: false
+        default: ''
+      conc:
+        description: '浏览器并发（runner 是 4 vCPU，填 2–3）'
+        required: false
+        default: '2'
+      sheet:
+        description: '是否额外出一张接触印相（10 支 ×4 关键帧，QC 用）'
+        required: false
+        default: 'true'
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      comps: ${{ steps.gen.outputs.comps }}
+    steps:
+      - id: gen
+        run: |
+          IN='${{ inputs.comps }}'
+          if [ -z "$IN" ]; then
+            OUT='["CineAwakening","CineLightThrough","CineGanzhiFlow","CineRing3D","CineInkBurst","CineGlassSlab","CineTunnel","CineSparksPlate","CineWordsFog","CineSealThunder"]'
+          else
+            OUT="$IN"
+          fi
+          echo "$OUT" | python3 -c "import json,sys; d=json.load(sys.stdin); assert isinstance(d,list) and d, '空数组'; print('将渲染', len(d), '支:', ','.join(d))"
+          echo "comps=$OUT" >> $GITHUB_OUTPUT
+
+  render:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        comp: ${{ fromJSON(needs.prepare.outputs.comps) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: install
+        run: npm install --no-audit --no-fund
+      - name: render ${{ matrix.comp }}
+        env:
+          REMOTION_GL: swiftshader
+        run: |
+          mkdir -p out
+          npx remotion render src/index.ts ${{ matrix.comp }} out/${{ matrix.comp }}.mp4 \
+            --codec=h264 --crf=16 --pixel-format=yuv420p \
+            --concurrency=${{ inputs.conc }} --gl=swiftshader --timeout=300000 --log=error
+          ls -la out/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cine-${{ matrix.comp }}
+          path: out/*.mp4
+          if-no-files-found: error
+
+  sheet:
+    needs: prepare
+    if: ${{ inputs.sheet == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --no-audit --no-fund
+      - name: contact sheet
+        env:
+          REMOTION_GL: swiftshader
+        run: |
+          npx remotion still src/index.ts ILCSheet out/il-sheet3.png --frame=0 \
+            --gl=swiftshader --timeout=300000 --log=error
+          ls -la out/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cine-sheet
+          path: out/*.png
+          if-no-files-found: error
