@@ -1,0 +1,48 @@
+name: 预告片配乐（纯音乐，本地合成）
+
+# 音轨由 tools/make_cue.py 用 numpy 合成（不下载任何素材，无版权问题），
+# 然后用 -c:v copy 把音轨"贴"进已渲染好的画面 —— 视频不重渲。
+on:
+  workflow_dispatch:
+    inputs:
+      video:
+        description: '要贴音轨的 mp4（仓库里的路径或 artifact 名）'
+        required: false
+        default: ''
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy
+      - name: 生成 cue
+        run: python tools/make_cue.py out/cue.wav
+      - name: 响度归一（两遍 loudnorm）
+        run: |
+          ffmpeg -hide_banner -i out/cue.wav -af loudnorm=I=-15:TP=-1.5:LRA=9:print_format=json -f null - 2> ln.txt || true
+          python - <<'PY'
+          import json,re,subprocess
+          raw=open('ln.txt').read(); d=json.loads(re.search(r'\{[^{}]*\}',raw,re.S).group(0))
+          subprocess.run(['ffmpeg','-hide_banner','-y','-i','out/cue.wav','-af',
+            f"loudnorm=I=-15:TP=-1.5:LRA=9:linear=true:measured_I={d['input_i']}:measured_TP={d['input_tp']}:"
+            f"measured_LRA={d['input_lra']}:measured_thresh={d['input_thresh']}:offset={d['target_offset']}",
+            '-ar','48000','out/cue_norm.wav'],check=True)
+          PY
+      - name: 贴音轨（视频不重编码）
+        run: |
+          # ⚠️ 必须显式 -map：双输入 + -c:v copy 时隐式选流会挑错，实测贴出来是一整条静音（2 kb/s）
+          ffmpeg -hide_banner -y -i "${{ inputs.video }}" -i out/cue_norm.wav \
+            -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -ar 48000 -ac 2 \
+            -af volume=-1.5dB -movflags +faststart out/trailer-scored.mp4
+          ffmpeg -hide_banner -i out/trailer-scored.mp4 -map 0:a -af volumedetect -f null - 2>&1 | grep -E 'mean_volume|max_volume'
+          ffmpeg -hide_banner -y -i out/cue_norm.wav -c:a libmp3lame -b:a 192k out/cue-trailer.mp3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: score
+          path: |
+            out/trailer-scored.mp4
+            out/cue-trailer.mp3
+          if-no-files-found: error
