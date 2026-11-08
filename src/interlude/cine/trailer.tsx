@@ -4,7 +4,7 @@ import {
   DK, LIT, cineA, DarkStage, Letterbox, LightSweep, Flare, easeOutCubic, easeInOutCubic,
   clamp01, rnd,
 } from './engine';
-import {Camera, slamCurve, Metallic, Shatter, CrackLines, Grade, makeShards} from './hollywood';
+import {Camera, slamCurve, SlamTitle, Shatter, CrackLines, Grade, makeShards} from './hollywood';
 import {FONT_KAI, FONT_KAI_BOLD} from '../../shushu/paper';
 import {JIAZI, DIPAN_POS, RING_POS, type Zhi} from '../../qianfa/data';
 
@@ -24,6 +24,11 @@ import {JIAZI, DIPAN_POS, RING_POS, type Zhi} from '../../qianfa/data';
 
 const D = {course: '伤寒钤法', series: '清源勘道', sub: '术数精讲', tagline: '换个眼睛看中医'};
 
+/** 节奏倍率（操作者 2026-11-08：「节奏 2.0 倍」）。
+ *  实现方式是**把镜头内部的时间轴整体加快**，而不是把成片抽帧加速 ——
+ *  这样 slam/震屏/推镜的曲线在 30fps 下依然平滑，不会因为"每帧砍一半"发顿。 */
+const SPEED = 2;
+
 /* ================================================================ 镜一 · 医学 / & / 数术（195 帧 / 6.5s）
 f2–18      「医学」砸进来（金属字 200px，落定那一下闪 + 震屏 8）
 f18–66     定格 + 推镜（画面继续往前进）+ 光扫
@@ -33,7 +38,7 @@ f98–165    三行定格 + 推镜 + 变形光斑扫过
 f165–195   甩出：整幅加速放大 + 模糊 → 硬切（不留空场）
 */
 const ShotA: React.FC = () => {
-  const n = useCurrentFrame() + 1;
+  const n = 1 + useCurrentFrame() * SPEED;
   const a = slamCurve(clamp01((n - 2) / 16));
   const amp = slamCurve(clamp01((n - 66) / 16));
   const shu = slamCurve(clamp01((n - 82) / 16));
@@ -43,14 +48,14 @@ const ShotA: React.FC = () => {
   return (
     <DarkStage key="left" bars dust={170} fog={0.5} grain={0.06}>
       <Camera shake={shake} push={0.07} ca={1.6}>
-        <Metallic text="医学" cx={640} cy={214} size={186} p={a.op} scaleIn={a.scale} blurPx={a.blur}
+        <SlamTitle text="医学" cx={640} cy={214} size={186} p={a.op} scaleIn={a.scale} blurPx={a.blur}
                   layers={10} depth={34} letterSpacing={20} />
         {amp.op > 0 ? (
-          <Metallic text="&" cx={640} cy={368} size={104} p={amp.op} scaleIn={amp.scale} blurPx={amp.blur}
+          <SlamTitle text="&" cx={640} cy={368} size={104} p={amp.op} scaleIn={amp.scale} blurPx={amp.blur}
                     layers={7} depth={22} letterSpacing={0} glow={LIT.gold} />
         ) : null}
         {shu.op > 0 ? (
-          <Metallic text="数术" cx={640} cy={492} size={158} p={shu.op} scaleIn={shu.scale} blurPx={shu.blur}
+          <SlamTitle text="数术" cx={640} cy={492} size={158} p={shu.op} scaleIn={shu.scale} blurPx={shu.blur}
                     layers={9} depth={30} letterSpacing={18} />
         ) : null}
         <LightSweep p={clamp01((n - 100) / 70)} angle={12} w={0.32} k={0.6} />
@@ -75,7 +80,7 @@ f250–330   只剩外圈转圈（内圈不动）；指针 + 推镜
 */
 const RING = RING_POS.map((p) => DIPAN_POS[p] as Zhi);
 const ShotB: React.FC = () => {
-  const n = useCurrentFrame() + 1;
+  const n = 1 + useCurrentFrame() * SPEED;
   const cx = 640, cy = 356;
   const suck = easeInOutCubic(clamp01((n - 64) / 32));       // 花甲子被吸走
   const compIn = slamCurve(clamp01((n - 78) / 18));
@@ -229,7 +234,7 @@ const TERMS = [
 ];
 const BREAK = 144;
 const ShotC: React.FC = () => {
-  const n = useCurrentFrame() + 1;
+  const n = 1 + useCurrentFrame() * SPEED;
   const crack = clamp01((n - 132) / 12);
   const shatterP = n >= BREAK ? (n - BREAK) / 34 : 0;
   const shake = TERMS.reduce((acc, _t, i) => {
@@ -287,18 +292,18 @@ f160–285   频道角标 + 长定格（这一镜是落点，允许停）
 const ShotD: React.FC<{course: string; tagline: string; series: string; sub: string}> = ({
   course, tagline, series, sub,
 }) => {
-  const n = useCurrentFrame() + 1;
+  const n = 1 + useCurrentFrame() * SPEED;
   const a = slamCurve(clamp01((n - 2) / 20));
   const b = slamCurve(clamp01((n - 120) / 16));
   const breathe = 0.5 + 0.5 * Math.sin(n * 0.03);
   return (
     <DarkStage key="top" bars dust={170} fog={0.5} grain={0.06}>
       <Camera shake={a.blur * 0.45 + b.blur * 0.35} push={0.05} ca={1.8}>
-        <Metallic text={course} cx={640} cy={330} size={196} p={a.op} scaleIn={a.scale} blurPx={a.blur}
+        <SlamTitle text={course} cx={640} cy={330} size={196} p={a.op} scaleIn={a.scale} blurPx={a.blur}
                   layers={12} depth={38} letterSpacing={24} glow={LIT.gold} />
         {b.op > 0 ? (
-          <Metallic text={tagline} cx={640} cy={508} size={64} p={b.op} scaleIn={b.scale} blurPx={b.blur * 0.7}
-                    layers={6} depth={16} letterSpacing={14} scheme="paper" glow={LIT.ice} />
+          <SlamTitle text={tagline} cx={640} cy={508} size={66} p={b.op} scaleIn={b.scale} blurPx={b.blur * 0.7}
+                    layers={6} depth={16} letterSpacing={14} glow={LIT.ice} />
         ) : null}
         <Flare x={640} y={330} k={clamp01((n - 30) / 40) * (0.55 + 0.45 * breathe)} len={700} />
         <LightSweep p={clamp01((n - 8) / 80)} angle={-8} w={0.36} k={0.55} />
@@ -318,8 +323,9 @@ const ShotD: React.FC<{course: string; tagline: string; series: string; sub: str
 };
 
 /* ================================================================ 预告片本体 */
-export const SHOT_LENS = [195, 330, 270, 285];
-export const CINE_TRAILER_FRAMES = SHOT_LENS.reduce((a, b) => a + b, 0);
+// 原时长 [195, 330, 270, 285] 帧；节奏 ×2 后（内部时间也 ×2，所以画面不会抽帧发顿）
+export const SHOT_LENS = [98, 165, 135, 143];
+export const CINE_TRAILER_FRAMES = SHOT_LENS.reduce((a, b) => a + b, 0);   // 541 帧 = 18.0s
 export type TrailerProps = {course?: string; series?: string; sub?: string; tagline?: string};
 
 export const CineTrailer: React.FC<TrailerProps> = ({

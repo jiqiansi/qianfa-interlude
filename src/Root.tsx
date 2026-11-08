@@ -70,7 +70,7 @@ export const Root: React.FC = () => (
     <Composition id="CineWordsFog" component={CineWordsFog} durationInFrames={150} fps={FPS} width={W} height={H} defaultProps={base} />
     <Composition id="CineSealThunder" component={CineSealThunder} durationInFrames={75} fps={FPS} width={W} height={H} />
     <Composition id="CineTrailer" component={CineTrailer} durationInFrames={CINE_TRAILER_FRAMES} fps={FPS} width={W} height={H} defaultProps={{course: base.course, series: base.series, sub: base.sub}} />
-    <Composition id="ILTSheet" component={ILTSheet} durationInFrames={1100} fps={FPS} width={ILT_W} height={ILT_H} />
+    <Composition id="ILTSheet" component={ILTSheet} durationInFrames={560} fps={FPS} width={ILT_W} height={ILT_H} />
     <Composition id="CineReel" component={CineReel} durationInFrames={CINE_REEL_FRAMES} fps={FPS} width={W} height={H} defaultProps={base} />
     <Composition id="ILCSheet" component={ILCSheet} durationInFrames={260} fps={FPS} width={ILC_W} height={ILC_H} />
     <Composition id="ILSheet" component={ILSheet} durationInFrames={200} fps={FPS} width={SHEET_W} height={SHEET_H} />

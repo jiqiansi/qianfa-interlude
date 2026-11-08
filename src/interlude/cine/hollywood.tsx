@@ -61,64 +61,55 @@ export const slamCurve = (p: number): {scale: number; blur: number; op: number} 
   return {scale: scale - over, blur, op};
 };
 
-// ---------------------------------------------------------------- 金属字（标题级）
+// ---------------------------------------------------------------- 标题字（原版口吻：纸白楷体 + 厚度 + 泛光）
+// 操作者 2026-11-08：「别来金属字，原版挺好的」——所以字面回到纸白楷体，
+// 只保留 slam 入场（砸入/模糊/过冲）与立体厚度，不做渐变抠字、不做金面。
 
-export const Metallic: React.FC<{
+export const SlamTitle: React.FC<{
   text: string; cx: number; cy: number; size?: number;
-  /** 入点进度（用 slamCurve 的结果传进来） */
+  /** slamCurve 的结果 */
   p?: number; scaleIn?: number; blurPx?: number;
-  /** 3D 姿态 */
   rx?: number; ry?: number;
-  /** 立体厚度层数（0 = 只要平字） */
   layers?: number; depth?: number;
-  /** 字距 */
   letterSpacing?: number;
-  /** 光晕色（朱砂/藤黄） */
+  /** 泛光色（朱砂/藤黄/冰蓝） */
   glow?: string;
-  /** 冷金 / 暖金两套金属面 */
-  scheme?: 'gold' | 'paper';
+  /** 字色（默认纸上白 #F6F0DF） */
+  color?: string;
   opacity?: number;
 }> = ({text, cx, cy, size = 180, p = 1, scaleIn = 1, blurPx = 0, rx = 6, ry = -12,
-  layers = 9, depth = 30, letterSpacing = 8, glow = LIT.gold, scheme = 'gold', opacity = 1}) => {
+  layers = 10, depth = 32, letterSpacing = 16, glow = LIT.gold, color = LIT.paper, opacity = 1}) => {
   const t = clamp01(p);
   if (t <= 0) return null;
   const t2 = easeOutCubic(t);
-  const front: React.CSSProperties = {
+  const base: React.CSSProperties = {
     position: 'absolute', left: cx, top: cy,
     fontFamily: FONT_KAI_BOLD, fontWeight: 700, fontSize: size, letterSpacing, lineHeight: 1,
     whiteSpace: 'nowrap',
   };
-  const metal = scheme === 'gold'
-    ? 'linear-gradient(180deg, #FFF8E2 0%, #F0DCA6 26%, #C6A863 48%, #8C7238 60%, #E9D29A 74%, #B79A57 100%)'
-    : 'linear-gradient(180deg, #FFFFFF 0%, #F6F0DF 34%, #CBC0A6 58%, #8A8171 66%, #F2EBD8 82%, #A79C83 100%)';
   return (
     <div style={{position: 'absolute', inset: 0, perspective: 1000, transformStyle: 'preserve-3d',
                  filter: blurPx > 0.3 ? `blur(${blurPx.toFixed(2)}px)` : undefined, opacity}}>
       <div style={{position: 'absolute', inset: 0, transformStyle: 'preserve-3d',
                    transform: `scale(${(scaleIn * (0.94 + 0.06 * t2)).toFixed(4)}) rotateX(${(rx * t2).toFixed(2)}deg) rotateY(${(ry * t2).toFixed(2)}deg)`}}>
-        {/* 厚度：从背面到正面 → 暗金属 → 亮金属 */}
         {layers > 0 ? Array.from({length: layers}, (_, i) => {
           const k = 1 - i / (layers + 1);
           return (
             <div key={i} style={{
-              ...front,
+              ...base,
               transform: `translate(-50%,-50%) translateZ(${(-(i + 1) * (depth / layers)).toFixed(2)}px)`,
-              color: `rgb(${Math.round(78 * k + 30)},${Math.round(66 * k + 26)},${Math.round(44 * k + 20)})`,
+              color: `rgb(${Math.round(74 * k + 34)},${Math.round(64 * k + 30)},${Math.round(46 * k + 22)})`,
             }}>{text}</div>
           );
         }) : null}
-        {/* 正面：金属渐变要"用 background-clip 抠字"，不能用 color */}
         <div style={{
-          ...front,
-          transform: 'translate(-50%,-50%)',
-          backgroundImage: metal, WebkitBackgroundClip: 'text', backgroundClip: 'text',
-          color: 'transparent',
-          textShadow: `0 ${(8 * t2).toFixed(0)}px ${(24 * t2).toFixed(0)}px rgba(0,0,0,0.75)`,
+          ...base, transform: 'translate(-50%,-50%)', color,
+          textShadow: `0 ${(8 * t2).toFixed(0)}px ${(22 * t2).toFixed(0)}px rgba(0,0,0,0.72), 0 0 ${(26 * t2).toFixed(0)}px ${cineA('#FFF3D8', 0.22 * t2)}`,
         }}>{text}</div>
-        {/* 泛光：同一串字再叠一层，只做光，不显形 */}
+        {/* 泛光：同一串字再叠一层，只做光不显形 */}
         <div style={{
-          ...front, transform: 'translate(-50%,-50%)', color: glow,
-          opacity: 0.42 * t2, filter: 'blur(16px)', mixBlendMode: 'screen',
+          ...base, transform: 'translate(-50%,-50%)', color: glow,
+          opacity: 0.30 * t2, filter: 'blur(18px)', mixBlendMode: 'screen',
         }}>{text}</div>
       </div>
     </div>
