@@ -24,7 +24,7 @@ export type CineProps = {
   course?: string; series?: string; sub?: string; tagline?: string;
   lec?: string; title?: string; word?: string; stop?: string;
 };
-const D = {course: '伤寒钤法', series: '清源勘道', sub: '术数精讲'};
+const D = {course: '伤寒钤法', series: '清源勘道', sub: '术数精讲', tagline: '换个眼睛看中医'};
 
 /** 3D 方印（朱砂实心 + 白文），会旋转落下。 */
 const Seal3D: React.FC<{cx: number; cy: number; size?: number; chars?: string; k: number; spin?: number}> = ({
@@ -68,7 +68,7 @@ f132–172 光扫过全屏 + 变形镜头光斑；磨砂玻璃副题条自下滑
 f172–240 定格呼吸（尘埃、纸的微晃、光晕低频脉动）
 */
 export const CineAwakening: React.FC<CineProps> = ({
-  course = D.course, series = D.series, sub = D.sub, tagline = '不望闻问切，只要得病日期', lec = '', title = '',
+  course = D.course, series = D.series, sub = D.sub, tagline = '换个眼睛看中医', lec = '', title = '',
 }) => {
   const n = useCurrentFrame() + 1;
   const rise = clamp01((n - 24) / 54);
@@ -125,7 +125,7 @@ f170–210 定格
 （v1 的「钤」水印在这版里彻底没有 —— 用户裁定它难看。）
 */
 export const CineLightThrough: React.FC<CineProps> = ({
-  course = D.course, series = D.series, sub = D.sub, tagline = '不望闻问切，只要得病日期', lec = '', title = '',
+  course = D.course, series = D.series, sub = D.sub, tagline = '换个眼睛看中医', lec = '', title = '',
 }) => {
   const n = useCurrentFrame() + 1;
   const push = easeInOutCubic(clamp01((n - 10) / 190));
@@ -298,7 +298,7 @@ f22      爆开：180 粒墨点向外飞、带阻尼
 f30–62   粒子减速成雾；雾里凝出短词
 f62–90   雾与粒子被吸走
 */
-export const CineInkBurst: React.FC<CineProps> = ({word = '续'}) => {
+export const CineInkBurst: React.FC<CineProps> = ({word = ''}) => {
   const n = useCurrentFrame() + 1;
   const t = Math.max(0, (n - 22) / 30);
   const cond = clamp01((n - 34) / 30);
@@ -340,7 +340,7 @@ f1–20    磨砂玻璃板自右侧 3D 滑入
 f16–40   板上短词逐字亮起
 f42–70   玻璃碎裂：碎片与粒子向外飞，主光一闪
 */
-export const CineGlassSlab: React.FC<CineProps> = ({word = '下一节', series = D.series}) => {
+export const CineGlassSlab: React.FC<CineProps> = ({word = '', series = D.series}) => {
   const n = useCurrentFrame() + 1;
   const inP = clamp01((n - 2) / 18);
   const letters = [...word];
@@ -409,7 +409,7 @@ export const CineGlassSlab: React.FC<CineProps> = ({word = '下一节', series =
 f1–70    九层纸框沿纵深依次掠过（镜头高速穿过），近处框迅速变大掠出画面
 f40–78   最后一层框内凝出朱砂短词
 */
-export const CineTunnel: React.FC<CineProps> = ({word = '第 8 讲'}) => {
+export const CineTunnel: React.FC<CineProps> = ({word = ''}) => {
   const n = useCurrentFrame() + 1;
   const CAM = 600;
   const sp = 52;                                    // 每帧前进的 z 距离
@@ -554,7 +554,7 @@ f70–104  朱砂光线横扫 + 变形光斑
 f104–150 雾退，字定格，副题浮出
 */
 export const CineWordsFog: React.FC<CineProps> = ({
-  course = D.course, series = D.series, sub = D.sub, tagline = '不望闻问切，只要得病日期', lec = '', title = '',
+  course = D.course, series = D.series, sub = D.sub, tagline = '换个眼睛看中医', lec = '', title = '',
 }) => {
   const n = useCurrentFrame() + 1;
   const cond = clamp01((n - 16) / 62);
@@ -588,7 +588,7 @@ f26      落定：三层冲击环 + 粒子 + **单帧**闪白（不频闪）
 f34–60   短词自印下浮出
 f60–75   余波散尽
 */
-export const CineSealThunder: React.FC<CineProps> = ({word = '落印', series = D.series}) => {
+export const CineSealThunder: React.FC<CineProps> = ({word = '', series = D.series}) => {
   const n = useCurrentFrame() + 1;
   const fall = clamp01((n - 2) / 24);
   const y = 344 - 300 * (1 - Math.pow(fall, 2.2));
@@ -603,8 +603,8 @@ export const CineSealThunder: React.FC<CineProps> = ({word = '落印', series = 
       <Burst cx={640} cy={344} t={Math.max(0, (n - 30) / 30)} qty={90} seed={83} spread={300} life={1.0}
              color={LIT.gold} color2={DK.text} gravity={260} ring={false} flash={false} />
       <Flare x={640} y={344} k={clamp01((n - 26) / 18) * clamp01(1 - t * 0.5)} len={480} />
-      <CineCaption text={word} cx={640} cy={520} size={34} p={clamp01((n - 34) / 18)} color={DK.text} />
-      <CineCaption text={series} cx={640} cy={604} size={22} p={clamp01((n - 42) / 20) * clamp01(1 - t)} />
+      {word ? <CineCaption text={word} cx={640} cy={520} size={34} p={clamp01((n - 34) / 18)} color={DK.text} /> : null}
+      {series ? <CineCaption text={series} cx={640} cy={604} size={22} p={clamp01((n - 42) / 20) * clamp01(1 - t)} /> : null}
     </DarkStage>
   );
 };
