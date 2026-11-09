@@ -27,21 +27,33 @@ jobs:
         run: |
           mkdir -p out
           SRC='${{ inputs.src }}'; SRC=${SRC:-assets/trailer-source.mp4}
-          COMMON="-c:v libx264 -preset slow -crf 19 -profile:v main -level 4.0 -pix_fmt yuv420p \
-            -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv \
-            -g 30 -keyint_min 30 -sc_threshold 0 -maxrate 4M -bufsize 8M \
-            -movflags +faststart -use_editlist 0 -avoid_negative_ts make_zero -t 18.033"
-          # 带音轨
-          ffmpeg -hide_banner -y -i "$SRC" -map 0:v:0 -map 0:a:0 $COMMON \
-            -c:a aac -profile:a aac_low -b:a 160k -ar 48000 -ac 2 -shortest out/trailer-mobile.mp4
+          # ⚠ 三条实测修正：
+          #   ① 色彩标记只写 -color_primaries/-color_trc 会被忽略（ffprobe 仍报 unknown）
+          #      → 必须走 -x264-params colorprim/transfer/colormatrix
+          #   ② -shortest 会吃掉最后一帧（541 → 540 帧）→ 去掉，改用精确 -t
+          #   ③ 时长按 541/30 精确给，音频随之裁到同一长度
+          BASE="-profile:v main -level 4.0 -pix_fmt yuv420p -color_range tv \
+            -x264-params colorprim=bt709:transfer=bt709:colormatrix=bt709 \
+            -g 30 -keyint_min 30 -sc_threshold 0 \
+            -movflags +faststart -use_editlist 0 -avoid_negative_ts make_zero -t 18.0333"
+          # 标准版（VBV 上限 4M）
+          ffmpeg -hide_banner -y -i "$SRC" -map 0:v:0 -map 0:a:0 \
+            -c:v libx264 -preset slow -crf 19 -maxrate 4M -bufsize 8M $BASE \
+            -c:a aac -profile:a aac_low -b:a 160k -ar 48000 -ac 2 out/trailer-mobile.mp4
           # 无音轨（A/B 用）
-          ffmpeg -hide_banner -y -i "$SRC" -map 0:v:0 -an $COMMON out/trailer-mobile-noaudio.mp4
+          ffmpeg -hide_banner -y -i "$SRC" -map 0:v:0 -an \
+            -c:v libx264 -preset slow -crf 19 -maxrate 4M -bufsize 8M $BASE out/trailer-mobile-noaudio.mp4
+          # 弱网 / 热点直连版（上限 1.8M，整片约 3MB）
+          ffmpeg -hide_banner -y -i "$SRC" -map 0:v:0 -map 0:a:0 \
+            -c:v libx264 -preset slow -crf 24 -maxrate 1800k -bufsize 3600k $BASE \
+            -c:a aac -profile:a aac_low -b:a 128k -ar 48000 -ac 2 out/trailer-mobile-lite.mp4
           ls -la out/
       - name: 诊断（关键帧间隔 / 码率上限 / 编辑列表 / 色彩标记）
         run: |
           for f in out/*.mp4; do
             echo "=== $f"
             ffprobe -v error -select_streams v:0 -show_entries stream=profile,level,pix_fmt,color_range,color_primaries,color_space,color_transfer,r_frame_rate,nb_frames -of default=nw=1 "$f"
+            echo "  秒时长: $(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f")"
             ffprobe -v error -select_streams v:0 -show_entries packet=pts_time,size,flags -of csv=p=0 "$f" | awk -F, '{s[int($1)]+=$2; if($3 ~ /K/) k=k" "int($1)} END{printf "  关键帧(秒):%s\n", k; m=0; for(i in s) if(s[i]>m) m=s[i]; print "  单秒峰值:", m*8/1000000, "Mbps"}'
             ffmpeg -hide_banner -i "$f" -map 0:a -af volumedetect -f null - 2>&1 | grep -E 'mean_volume|max_volume' || echo "  （无音轨）"
           done
