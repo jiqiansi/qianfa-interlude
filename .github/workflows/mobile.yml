@@ -1,0 +1,49 @@
+name: 手机安全母版（重编一遍，去掉老安卓踩坑的编码参数）
+
+# 症状：手机上第 10 秒左右自动重播，电脑正常。
+# 排查结论：文件本身没坏（ffmpeg 全解码零报错、容器 EOF 对齐、峰值码率 5 Mbps）。
+# 于是把所有"老设备/流式播放会踩"的编码参数逐个换掉：
+#   ① GOP 最长 4.8s（关键帧只有 6 个）→ 改成 1s 一个关键帧、禁场景切换点
+#   ② 无码率上限（CRF 单帧峰值 77KB）→ 加 VBV 上限
+#   ③ High profile + yuvj420p(full range) + 色彩标记 unknown → Main@4.0 + yuv420p + bt709
+#   ④ moov 里有编辑列表（elst media_time=6000）→ -use_editlist 0
+# 同时出一个"无音轨"版做 A/B：能分清是音轨还是视频轨的问题。
+on:
+  workflow_dispatch:
+    inputs:
+      src:
+        description: '源 mp4（仓库内路径）'
+        required: false
+        default: 'assets/trailer-source.mp4'
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 转手机安全母版
+        run: |
+          mkdir -p out
+          SRC='${{ inputs.src }}'; SRC=${SRC:-assets/trailer-source.mp4}
+          COMMON="-c:v libx264 -preset slow -crf 19 -profile:v main -level 4.0 -pix_fmt yuv420p \
+            -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv \
+            -g 30 -keyint_min 30 -sc_threshold 0 -maxrate 4M -bufsize 8M \
+            -movflags +faststart -use_editlist 0 -avoid_negative_ts make_zero -t 18.033"
+          # 带音轨
+          ffmpeg -hide_banner -y -i "$SRC" -map 0:v:0 -map 0:a:0 $COMMON \
+            -c:a aac -profile:a aac_low -b:a 160k -ar 48000 -ac 2 -shortest out/trailer-mobile.mp4
+          # 无音轨（A/B 用）
+          ffmpeg -hide_banner -y -i "$SRC" -map 0:v:0 -an $COMMON out/trailer-mobile-noaudio.mp4
+          ls -la out/
+      - name: 诊断（关键帧间隔 / 码率上限 / 编辑列表 / 色彩标记）
+        run: |
+          for f in out/*.mp4; do
+            echo "=== $f"
+            ffprobe -v error -select_streams v:0 -show_entries stream=profile,level,pix_fmt,color_range,color_primaries,color_space,color_transfer,r_frame_rate,nb_frames -of default=nw=1 "$f"
+            ffprobe -v error -select_streams v:0 -show_entries packet=pts_time,size,flags -of csv=p=0 "$f" | awk -F, '{s[int($1)]+=$2; if($3 ~ /K/) k=k" "int($1)} END{printf "  关键帧(秒):%s\n", k; m=0; for(i in s) if(s[i]>m) m=s[i]; print "  单秒峰值:", m*8/1000000, "Mbps"}'
+            ffmpeg -hide_banner -i "$f" -map 0:a -af volumedetect -f null - 2>&1 | grep -E 'mean_volume|max_volume' || echo "  （无音轨）"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobile
+          path: out/*.mp4
+          if-no-files-found: error
