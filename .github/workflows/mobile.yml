@@ -20,6 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # ⚠ ubuntu-latest 上默认没有 ffmpeg（实测 command not found，exit 127）
+      - name: 装 ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: 转手机安全母版
         run: |
           mkdir -p out
